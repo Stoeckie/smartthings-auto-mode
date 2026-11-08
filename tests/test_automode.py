@@ -26,6 +26,7 @@ package.loaded["st.driver"] = function(name, tmpl)
   return tmpl
 end
 package.loaded["log"] = { info = function() end, warn = function() end, error = function() end, debug = function() end }
+package.loaded["st.json"] = { encode = function(x) return tostring(x) end, decode = function() return {} end }
 NOW = 1794132000
 os.time = (function(orig) return function(t) if t then return orig(t) end return NOW end end)(os.time)
 DEVICES, CREATED, TIMERS = {}, {}, {}

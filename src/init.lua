@@ -14,8 +14,9 @@
 local capabilities = require "st.capabilities"
 local Driver = require "st.driver"
 local log = require "log"
+local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-08m"
+local BUILD = "2026-11-09a"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -85,7 +86,7 @@ local function tz_of(dev)
   local p = dev.get_parent_device and dev:get_parent_device()
   return (p and p.preferences and p.preferences.timeZone) or "CET"
 end
-local function emit(dev, ev) pcall(function() dev:emit_event(ev) end) end
+local function emit(dev, ev) emitq.try(dev, ev) end
 -- the on/off switch in the app: on = Automatic, off = Manual (the app shows a parameterised switch as a list)
 local function emit_switch(dev, m)
   local ok, has = pcall(function() return dev:supports_capability(capabilities.switch) end)
@@ -328,7 +329,11 @@ local driver = Driver("stoeckie-auto-mode", {
     [autozones.ID] = { [autozones.commands.addZone.NAME] = handle_add_zone },
     [capabilities.switch.ID] = {
       [capabilities.switch.commands.on.NAME] = function(_, dev) set_auto(dev) end,
-      [capabilities.switch.commands.off.NAME] = function(_, dev) set_manual(dev, "switched off in the app") end,
+      [capabilities.switch.commands.off.NAME] = function(_, dev)
+        -- off while already Manual (the app re-sends the shown state): the manual period is not extended
+        if shown(dev) == "manual" then return end
+        set_manual(dev, "switched off in the app")
+      end,
     },
     [capabilities.refresh.ID] = {
       [capabilities.refresh.commands.refresh.NAME] = function(drv, dev)
