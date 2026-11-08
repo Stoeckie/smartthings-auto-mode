@@ -4,13 +4,24 @@
   "states": [
    {
     "component": "main",
-    "capability": "silvervalley08660.autoMode",
+    "capability": "switch",
     "version": 1
    }
   ],
-  "actions": []
+  "actions": [
+   {
+    "component": "main",
+    "capability": "switch",
+    "version": 1
+   }
+  ]
  },
  "detailView": [
+  {
+   "component": "main",
+   "capability": "switch",
+   "version": 1
+  },
   {
    "component": "main",
    "capability": "silvervalley08660.autoMode",

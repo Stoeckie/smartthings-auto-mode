@@ -36,6 +36,7 @@ function NEW(info)
   function d:set_field(k, v) self.fields[k] = v end
   function d:emit_event(e) self.events[#self.events + 1] = e; self.last = self.last or {}; self.last[e.path] = e.arg end
   function d:online() end
+  function d:supports_capability(c) return true end
   function d:get_parent_device() return HUB end
   d.thread = { call_with_delay = function(_, s, fn) TIMERS[#TIMERS + 1] = { at = NOW + s, fn = fn }; return #TIMERS end,
                cancel_timer = function(_, t) if TIMERS[t] then TIMERS[t].fn = nil end end }

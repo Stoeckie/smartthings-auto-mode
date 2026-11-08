@@ -4,7 +4,7 @@ Automatic or Manual per zone. Routines pause for a while after someone operates 
 
 ## How it works
 
-* One **Automation** device per zone, e.g. "Automatisch Keuken licht". It shows **Automatic** or **Manual** and **Manual until 13:15**. Tap it to go back to Automatic at once, or to Manual on purpose.
+* One **Automation** device per zone, e.g. "Automatisch Keuken licht", with an on/off switch: **on = Automatic, off = Manual**, and **Manual until 13:15**. Switch it on to go back to Automatic at once, or off to make it Manual on purpose.
 * Your routines for that zone get two extra lines:
   * condition **"Automatisch Keuken licht is Automatic"** (they pause while the zone is Manual; it is also a trigger, so a routine runs again when the zone becomes Automatic and puts things right, for example turns a light off that was left on);
   * first action **"Automatisch Keuken licht: Routine is acting"**, so the changes that routine causes are not taken for manual ones.

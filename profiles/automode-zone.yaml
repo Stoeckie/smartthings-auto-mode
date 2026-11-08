@@ -2,6 +2,8 @@ name: automode-zone
 components:
   - id: main
     capabilities:
+      - id: switch
+        version: 1
       - id: silvervalley08660.autoMode
         version: 1
       - id: silvervalley08660.autoSignal
@@ -28,5 +30,5 @@ preferences:
       maximum: 900
       default: 120
 metadata:
-  vid: f1715e54-af1e-37ba-818c-54a526683077
+  vid: 676d642d-2a71-344b-b868-7fc2f280b763
   mnmn: SmartThingsCommunity

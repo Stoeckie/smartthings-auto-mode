@@ -15,7 +15,7 @@ local capabilities = require "st.capabilities"
 local Driver = require "st.driver"
 local log = require "log"
 
-local BUILD = "2026-11-08l"
+local BUILD = "2026-11-08m"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -86,6 +86,14 @@ local function tz_of(dev)
   return (p and p.preferences and p.preferences.timeZone) or "CET"
 end
 local function emit(dev, ev) pcall(function() dev:emit_event(ev) end) end
+-- the on/off switch in the app: on = Automatic, off = Manual (the app shows a parameterised switch as a list)
+local function emit_switch(dev, m)
+  local ok, has = pcall(function() return dev:supports_capability(capabilities.switch) end)
+  if ok and has then
+    emit(dev, m == "auto" and capabilities.switch.switch.on() or capabilities.switch.switch.off())
+  end
+end
+local function emit_mode(dev, m) emit(dev, automode.mode(m)); emit_switch(dev, m) end
 
 -- what the app shows (the field can say "auto" while the cloud never got the event, e.g. right after creation)
 local function shown(dev)
@@ -97,10 +105,11 @@ local function set_auto(dev)
   if timers[dev.id] then pcall(function() dev.thread:cancel_timer(timers[dev.id]) end); timers[dev.id] = nil end
   dev:set_field("manual_until", nil, { persist = true })
   if shown(dev) ~= "auto" then
-    emit(dev, automode.mode("auto"))
+    emit_mode(dev, "auto")
     log.info("[auto] " .. tostring(dev.label) .. ": automatic")
   end
   dev:set_field("mode", "auto", { persist = true })
+  emit_switch(dev, "auto")
   emit(dev, automode["until"]("-"))
 end
 
@@ -120,8 +129,9 @@ end
 local function set_manual(dev, why)
   local untl = os.time() + math.floor(pref(dev, "manualMinutes", 120) * 60)
   dev:set_field("manual_until", untl, { persist = true })
-  if shown(dev) ~= "manual" then emit(dev, automode.mode("manual")) end
+  if shown(dev) ~= "manual" then emit_mode(dev, "manual") end
   dev:set_field("mode", "manual", { persist = true })
+  emit_switch(dev, "manual")
   emit(dev, automode["until"](M.clock(tz_of(dev), untl)))
   log.info(string.format("[auto] %s: manual until %s (%s)", tostring(dev.label), M.clock(tz_of(dev), untl), why))
   schedule_end(dev)
@@ -254,14 +264,14 @@ local function device_init_inner(driver, dev)
   local untl = tonumber((dev:get_field("manual_until")))
   if untl and untl > os.time() then
     dev:set_field("mode", "manual", { persist = true })
-    emit(dev, automode.mode("manual"))
+    emit_mode(dev, "manual")
     emit(dev, automode["until"](M.clock(tz_of(dev), untl)))
     schedule_end(dev)
   else
     -- always send both values once: a zone that was just created may have missed its first events
     dev:set_field("manual_until", nil, { persist = true })
     dev:set_field("mode", "auto", { persist = true })
-    emit(dev, automode.mode("auto"))
+    emit_mode(dev, "auto")
     emit(dev, automode["until"]("-"))
   end
   -- and once more a little later, for a zone that is still being created in the cloud
@@ -269,7 +279,7 @@ local function device_init_inner(driver, dev)
     dev.thread:call_with_delay(10, function()
       if shown(dev) == nil then
         local m = dev:get_field("mode") or "auto"
-        emit(dev, automode.mode(m))
+        emit_mode(dev, m)
         local u = tonumber((dev:get_field("manual_until")))
         emit(dev, automode["until"](u and M.clock(tz_of(dev), u) or "-"))
       end
@@ -281,7 +291,7 @@ local function device_init(driver, dev)
   local ok, err = pcall(device_init_inner, driver, dev)
   if not ok then
     log.error("[auto] init " .. tostring(dev.label) .. ": " .. tostring(err))
-    emit(dev, automode.mode("auto"))
+    emit_mode(dev, "auto")
     emit(dev, automode["until"]("-"))
   end
 end
@@ -316,6 +326,10 @@ local driver = Driver("stoeckie-auto-mode", {
     [automode.ID] = { [automode.commands.setMode.NAME] = handle_set_mode },
     [autosignal.ID] = { [autosignal.commands.signal.NAME] = handle_signal },
     [autozones.ID] = { [autozones.commands.addZone.NAME] = handle_add_zone },
+    [capabilities.switch.ID] = {
+      [capabilities.switch.commands.on.NAME] = function(_, dev) set_auto(dev) end,
+      [capabilities.switch.commands.off.NAME] = function(_, dev) set_manual(dev, "switched off in the app") end,
+    },
     [capabilities.refresh.ID] = {
       [capabilities.refresh.commands.refresh.NAME] = function(drv, dev)
         if dev.device_network_id == HUB_DNI then sync_zones(drv, dev) end
