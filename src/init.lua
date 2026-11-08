@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-09a"
+local BUILD = "2026-11-09b"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -320,9 +320,16 @@ local function discovery(driver, _, should_continue)
   })
 end
 
+-- a removed zone: its timer and bookkeeping go too
+local function device_removed(_, dev)
+  if timers[dev.id] then pcall(function() dev.thread:cancel_timer(timers[dev.id]) end) end
+  timers[dev.id], busy[dev.id], acted[dev.id], claims[dev.id] = nil, nil, nil, nil
+  emitq.forget(dev)
+end
+
 local driver = Driver("stoeckie-auto-mode", {
   discovery = discovery,
-  lifecycle_handlers = { init = device_init, added = device_init, infoChanged = info_changed },
+  lifecycle_handlers = { init = device_init, added = device_init, infoChanged = info_changed, removed = device_removed },
   capability_handlers = {
     [automode.ID] = { [automode.commands.setMode.NAME] = handle_set_mode },
     [autosignal.ID] = { [autosignal.commands.signal.NAME] = handle_signal },
