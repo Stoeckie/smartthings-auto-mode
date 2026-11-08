@@ -1,0 +1,29 @@
+name: automode-zone
+components:
+  - id: main
+    capabilities:
+      - id: silvervalley08660.autoMode
+        version: 1
+      - id: silvervalley08660.autoSignal
+        version: 1
+    categories:
+      - name: RemoteController
+preferences:
+  - name: manualMinutes
+    title: Manual for (minutes)
+    description: "How long the zone stays Manual after someone operates one of its devices by hand. Every new manual change starts this time again."
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 1
+      maximum: 1440
+      default: 120
+  - name: busySeconds
+    title: Routine window (seconds)
+    description: "Longest time a device may keep changing after a routine started it (windows that take long to move). A device must start changing within 10 to 15 seconds after the routine, otherwise the change is manual."
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 10
+      maximum: 900
+      default: 120

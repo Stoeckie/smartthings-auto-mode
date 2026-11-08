@@ -1,0 +1,7 @@
+name: 'Stoeckie Auto Mode'
+packageKey: 'stoeckie-auto-mode-v2'
+description: 'Automatic or manual per zone: routines pause for a while after someone operates a device by hand'
+vendorSupportInformation: 'https://github.com/Stoeckie/smartthings-auto-mode'
+permissions:
+  lan: {}
+  discovery: {}

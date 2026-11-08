@@ -1,0 +1,34 @@
+name: automode-hub
+components:
+  - id: main
+    capabilities:
+      - id: silvervalley08660.autoZones
+        version: 1
+      - id: refresh
+        version: 1
+    categories:
+      - name: RemoteController
+preferences:
+  - name: zones
+    title: Zones
+    description: "Comma separated names. Each name gets its own Automation device (e.g. Kitchen light, Living room, Heating bedroom). Removing a name does not delete its device; delete that device yourself."
+    required: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: ""
+  - name: timeZone
+    title: Time zone (for "manual until")
+    required: false
+    preferenceType: enumeration
+    definition:
+      options:
+        CET: "Central Europe (CET/CEST)"
+        GMT: "UK, Ireland, Portugal (GMT/BST)"
+        EET: "Eastern Europe (EET/EEST)"
+        ET: "US Eastern"
+        CT: "US Central"
+        MT: "US Mountain"
+        PT: "US Pacific"
+        UTC: "UTC"
+      default: CET
