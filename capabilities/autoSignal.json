@@ -1,0 +1,1 @@
+{"name": "Auto Signal", "attributes": {}, "commands": {"signal": {"name": "signal", "arguments": [{"name": "source", "optional": false, "schema": {"type": "string", "maxLength": 80}}]}}}

@@ -1,0 +1,1 @@
+{"dashboard": {"states": [], "actions": []}, "detailView": [{"label": "{{i18n.label}}", "displayType": "state", "state": {"label": "{{zones.value}}"}}], "automation": {"conditions": [], "actions": []}}

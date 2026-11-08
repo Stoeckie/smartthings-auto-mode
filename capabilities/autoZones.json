@@ -1,0 +1,1 @@
+{"name": "Auto Zones", "attributes": {"zones": {"schema": {"type": "object", "properties": {"value": {"type": "string", "maxLength": 500}}, "additionalProperties": false, "required": ["value"]}, "enumCommands": []}}, "commands": {"addZone": {"name": "addZone", "arguments": [{"name": "name", "optional": false, "schema": {"type": "string", "maxLength": 40}}]}}}

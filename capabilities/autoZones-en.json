@@ -1,0 +1,1 @@
+{"tag": "en", "label": "Zones", "attributes": {"zones": {"label": "Zones", "displayTemplate": "{{device.label}} zones: {{value}}"}}, "commands": {"addZone": {"label": "Add zone", "arguments": {"name": {"label": "Name"}}}}}

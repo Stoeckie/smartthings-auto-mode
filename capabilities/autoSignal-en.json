@@ -1,0 +1,1 @@
+{"tag": "en", "label": "Change signal", "commands": {"signal": {"label": "Change seen", "arguments": {"source": {"label": "Source"}}}}}
