@@ -1,0 +1,36 @@
+{
+ "type": "profile",
+ "dashboard": {
+  "states": [
+   {
+    "component": "main",
+    "capability": "silvervalley08660.autoMode",
+    "version": 1
+   }
+  ],
+  "actions": []
+ },
+ "detailView": [
+  {
+   "component": "main",
+   "capability": "silvervalley08660.autoMode",
+   "version": 1
+  }
+ ],
+ "automation": {
+  "conditions": [
+   {
+    "component": "main",
+    "capability": "silvervalley08660.autoMode",
+    "version": 1
+   }
+  ],
+  "actions": [
+   {
+    "component": "main",
+    "capability": "silvervalley08660.autoMode",
+    "version": 1
+   }
+  ]
+ }
+}

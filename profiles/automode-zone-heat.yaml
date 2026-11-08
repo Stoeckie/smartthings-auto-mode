@@ -27,3 +27,6 @@ preferences:
       minimum: 10
       maximum: 900
       default: 120
+metadata:
+  vid: f1715e54-af1e-37ba-818c-54a526683077
+  mnmn: SmartThingsCommunity
