@@ -15,7 +15,7 @@ local capabilities = require "st.capabilities"
 local Driver = require "st.driver"
 local log = require "log"
 
-local BUILD = "2026-11-08j"
+local BUILD = "2026-11-08k"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
