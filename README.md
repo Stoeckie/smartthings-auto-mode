@@ -27,6 +27,13 @@ Automatic or Manual per zone. Routines pause for a while after someone operates 
 3. Enter the zones in its settings. Names with accents (é, ï) are fine.
 4. Add the condition and the first action to the routines of each zone, and one hidden or visible rule per zone: "if any device of the zone changes, set the zone to Change seen".
 
+## Tips
+
+* Put each button in a rule of its own. A rule checks all its conditions on every trigger, and a button keeps showing "pushed" after a press, so in a shared rule every light change would look like a button press.
+* For "zone is Automatic" do not use "only when it changes": the condition is then only true at the moment the zone switches.
+
+Forum: https://community.smartthings.com/t/312072
+
 ## Limits
 
 * A manual change of a device in the first seconds after a routine switched that same device is taken for the routine's own.
