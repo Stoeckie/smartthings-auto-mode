@@ -37,6 +37,9 @@ function NEW(info)
   function d:set_field(k, v) self.fields[k] = v end
   function d:emit_event(e) self.events[#self.events + 1] = e; self.last = self.last or {}; self.last[e.path] = e.arg end
   function d:online() end
+  function d:get_latest_state(comp, cap, attr)
+    for k, v in pairs(self.last or {}) do if k:sub(-#attr - 1) == "." .. attr and k:find(tostring(cap), 1, true) then return v end end
+  end
   function d:supports_capability(c) return true end
   function d:get_parent_device() return HUB end
   d.thread = { call_with_delay = function(_, s, fn) TIMERS[#TIMERS + 1] = { at = NOW + s, fn = fn }; return #TIMERS end,
@@ -204,3 +207,15 @@ def test_slow_window_is_routine():
     assert last(lua, "mode") == "auto"
     lua.execute('NOW = NOW + 200'); sig("shade:Roof Window 1")
     assert last(lua, "mode") == "manual"
+
+
+def test_restart_sends_nothing_unchanged():
+    """A driver restart does not send the mode again when the app already shows it (rules would fire)."""
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Gordijnen", key = "zone:gordijnen", prefs = { manualMinutes = 120, busySeconds = 120 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    assert last(lua, "mode") == "auto"
+    lua.execute('Z.events = {}')
+    n = 0
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    assert lua.eval('#(Z.events or {})') == n

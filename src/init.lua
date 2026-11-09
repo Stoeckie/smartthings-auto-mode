@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-09f"
+local BUILD = "2026-11-09g"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -296,17 +296,22 @@ local function device_init_inner(driver, dev)
   end
   dev:online()
   local untl = tonumber((dev:get_field("manual_until")))
+  -- only send what the app does not show yet: a mode event that changes nothing still triggers rules
+  -- (a driver update at 07:33 made "Gordijnen dicht na handmatig" close the curtains again)
+  local function until_shown()
+    local ok, v = pcall(function() return dev:get_latest_state("main", automode.ID, automode["until"].NAME) end)
+    return ok and v or nil
+  end
   if untl and untl > os.time() then
     dev:set_field("mode", "manual", { persist = true })
-    emit_mode(dev, "manual")
-    emit(dev, automode["until"](until_text(dev, untl)))
+    if shown(dev) ~= "manual" then emit_mode(dev, "manual") end
+    if until_shown() ~= until_text(dev, untl) then emit(dev, automode["until"](until_text(dev, untl))) end
     schedule_end(dev)
   else
-    -- always send both values once: a zone that was just created may have missed its first events
     dev:set_field("manual_until", nil, { persist = true })
     dev:set_field("mode", "auto", { persist = true })
-    emit_mode(dev, "auto")
-    emit(dev, automode["until"]("-"))
+    if shown(dev) ~= "auto" then emit_mode(dev, "auto") end
+    if until_shown() ~= "-" then emit(dev, automode["until"]("-")) end
   end
   -- and once more a little later, for a zone that is still being created in the cloud
   pcall(function()
