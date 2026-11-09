@@ -189,3 +189,18 @@ def test_late_level_report_is_routine():
     lua.execute('NOW = NOW + 120')
     sig("level:Hal Trap Licht")
     assert last(lua, "mode") == "manual"
+
+
+def test_slow_window_is_routine():
+    """A roof window reports opening right away and its position 30 s later: still the routine's."""
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Dakramen", key = "zone:dakramen", prefs = { manualMinutes = 120, busySeconds = 120 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    def sig(src):
+        lua.execute(f'DRIVER.capability_handlers.autoSignal.signal(nil, Z, {{ args = {{ source = "{src}" }} }})')
+    cmd(lua, "routine")
+    lua.execute('NOW = NOW + 6'); sig("shade:Roof Window 1")
+    lua.execute('NOW = NOW + 30'); sig("shade:Roof Window 1")
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 200'); sig("shade:Roof Window 1")
+    assert last(lua, "mode") == "manual"

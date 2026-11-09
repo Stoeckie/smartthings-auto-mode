@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-09e"
+local BUILD = "2026-11-09f"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -74,7 +74,7 @@ local claims = {} -- device.id -> { [source] = until } changes of one device tha
 -- events (level after switch, a window that keeps moving) count as long as they come within CONT seconds
 -- of each other. Everything else, also shortly after a routine, is manual. A button press is always manual.
 local START = { light = 10, heat = 15, shade = 15 }
-local CONT = { light = 8, heat = 20, shade = 20 }
+local CONT = { light = 8, heat = 45, shade = 45 }   -- a roof window reported "opening" and its position 30 s later
 M.START, M.CONT = START, CONT
 local timers = {} -- device.id -> timer
 
