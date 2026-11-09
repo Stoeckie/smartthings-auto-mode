@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-09d"
+local BUILD = "2026-11-09e"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -161,6 +161,17 @@ local function handle_signal(_, dev, cmd)
   local cl = claims[dev.id] or {}
   claims[dev.id] = cl
   local cap = (acted[dev.id] or 0) + pref(dev, "busySeconds", 120)
+  if kind == "level" then
+    -- a dimmer or a Hue lamp often reports its end level later (seen: 48 % right away, 50 % a minute later).
+    -- A level change of a lamp the routine switched or dimmed is the routine's while its window is open.
+    local name = src:sub(7)
+    if acted[dev.id] and now <= cap and (cl["light:" .. name] or cl[src] or now - acted[dev.id] <= START.light) then
+      cl[src] = cap
+      return
+    end
+    set_manual(dev, src)
+    return
+  end
   local untl = cl[src]
   if untl and now <= untl and now <= cap then
     cl[src] = math.min(now + (CONT[kind] or 8), cap) -- still the routine's own movement
@@ -236,15 +247,20 @@ end
 M.is_hold = is_hold
 
 local function sync_zones(driver, hub)
-  local have = {}
+  local have, labels = {}, {}
   for _, d in ipairs(driver:get_devices()) do
-    if d.parent_assigned_child_key then have[d.parent_assigned_child_key] = true end
+    if d.parent_assigned_child_key then
+      have[d.parent_assigned_child_key] = true
+      -- a zone that was renamed keeps its old key: its new name must not create a second device
+      labels[tostring(d.label or ""):lower()] = true
+      labels[tostring(d.vendor_provided_label or ""):lower()] = true
+    end
   end
   local names = zone_list(hub, driver)
   for _, n in ipairs(names) do
     -- the hub refuses a child key with non-ASCII characters (e.g. "ï"): write those bytes as hex
     local key = "zone:" .. n:lower():gsub("[\128-\255]", function(c) return string.format("%02x", c:byte()) end)
-    if not have[key] then
+    if not have[key] and not labels[n:lower()] then
       log.info("[auto] creating zone device " .. n)
       have[key] = true
       driver:try_create_device({

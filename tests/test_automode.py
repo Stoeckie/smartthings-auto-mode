@@ -159,3 +159,33 @@ def test_hold_until_switched_on():
     assert last(lua, "mode") == "manual" and last(lua, "until") == "until switched on"
     cmd(lua, "auto")
     assert last(lua, "mode") == "auto"
+
+
+def test_renamed_zone_no_duplicate():
+    """A zone renamed in the app (old key, new label) does not get a second device at the next start."""
+    lua = setup()
+    lua.execute('HUB = NEW({ id = "h", dni = "automode-hub", prefs = { zones = "", timeZone = "CET" } })')
+    lua.execute('Z = NEW({ id = "z", label = "Gang licht", key = "zone:gang en wc licht", prefs = {} })')
+    lua.execute('Z.parent_device_id = "h"')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, HUB)')
+    assert lua.eval('#CREATED') == 0
+
+
+def test_late_level_report_is_routine():
+    """A Hue lamp reports its end level a minute after the routine: not manual. A level change without
+    a routine, or after the window, is manual."""
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Gang", key = "zone:gang", prefs = { manualMinutes = 120, busySeconds = 120 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    def sig(src):
+        lua.execute(f'DRIVER.capability_handlers.autoSignal.signal(nil, Z, {{ args = {{ source = "{src}" }} }})')
+    cmd(lua, "routine")
+    lua.execute('NOW = NOW + 1')
+    sig("light:Hal Trap Licht")
+    sig("level:Hal Trap Licht")
+    lua.execute('NOW = NOW + 60')
+    sig("level:Hal Trap Licht")
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 120')
+    sig("level:Hal Trap Licht")
+    assert last(lua, "mode") == "manual"
