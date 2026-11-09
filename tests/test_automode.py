@@ -139,3 +139,23 @@ def test_signals_right_after_routine():
     cmd(lua, "auto"); cmd(lua, "routine")
     lua.execute('NOW = NOW + 1'); sig(lua, "button:K")     # a button is always manual
     assert last(lua, "mode") == "manual"
+
+
+def test_hold_until_switched_on():
+    """Manual for (minutes) 0: Manual until switched on; no timer and no reset by a mode change."""
+    lua = setup()
+    lua.execute('HUB = NEW({ id = "h", dni = "automode-hub", prefs = { zones = "Zonweringen", timeZone = "CET" } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, HUB)')
+    assert lua.eval('CREATED[1].profile') == "automode-zone-hold"
+    lua.execute('Z = NEW({ id = "z", label = "Zonweringen", key = "zone:zonweringen", prefs = { manualMinutes = 0, busySeconds = 120 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "change")
+    assert last(lua, "mode") == "manual" and last(lua, "until") == "until switched on"
+    lua.execute('for i = 1, 30 do NOW = NOW + 3600; RUN_TIMERS() end')
+    assert last(lua, "mode") == "manual"
+    cmd(lua, "reset")
+    assert last(lua, "mode") == "manual"
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')    # driver restart keeps it
+    assert last(lua, "mode") == "manual" and last(lua, "until") == "until switched on"
+    cmd(lua, "auto")
+    assert last(lua, "mode") == "auto"

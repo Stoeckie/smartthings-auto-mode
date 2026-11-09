@@ -13,11 +13,11 @@ components:
 preferences:
   - name: manualMinutes
     title: Manual for (minutes)
-    description: "How long the zone stays Manual after someone operates one of its devices by hand. Every new manual change starts this time again. In the app: switch on = Automatic, off = Manual."
+    description: "How long the zone stays Manual after someone operates one of its devices by hand. Every new manual change starts this time again. 0 = stays Manual until you switch it on. In the app: switch on = Automatic, off = Manual."
     required: false
     preferenceType: integer
     definition:
-      minimum: 1
+      minimum: 0
       maximum: 1440
       default: 120
   - name: busySeconds

@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-09c"
+local BUILD = "2026-11-09d"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -114,6 +114,14 @@ local function set_auto(dev)
   emit(dev, automode["until"]("-"))
 end
 
+-- "Manual for (minutes)" 0: the zone stays Manual until it is switched on (no timer). Stored as a far time.
+local HOLD = 4102444800   -- 2100-01-01
+local function until_text(dev, untl)
+  if untl >= HOLD then return "until switched on" end
+  return M.clock(tz_of(dev), untl)
+end
+M.HOLD = HOLD
+
 local schedule_end
 schedule_end = function(dev)
   if timers[dev.id] then pcall(function() dev.thread:cancel_timer(timers[dev.id]) end); timers[dev.id] = nil end
@@ -128,13 +136,14 @@ schedule_end = function(dev)
 end
 
 local function set_manual(dev, why)
-  local untl = os.time() + math.floor(pref(dev, "manualMinutes", 120) * 60)
+  local mins = math.floor(tonumber(pref(dev, "manualMinutes", 120)) or 120)
+  local untl = mins <= 0 and HOLD or os.time() + mins * 60
   dev:set_field("manual_until", untl, { persist = true })
   if shown(dev) ~= "manual" then emit_mode(dev, "manual") end
   dev:set_field("mode", "manual", { persist = true })
   emit_switch(dev, "manual")
-  emit(dev, automode["until"](M.clock(tz_of(dev), untl)))
-  log.info(string.format("[auto] %s: manual until %s (%s)", tostring(dev.label), M.clock(tz_of(dev), untl), why))
+  emit(dev, automode["until"](until_text(dev, untl)))
+  log.info(string.format("[auto] %s: manual %s (%s)", tostring(dev.label), until_text(dev, untl), why))
   schedule_end(dev)
 end
 
@@ -171,7 +180,8 @@ local function handle_set_mode(_, dev, cmd)
     routine_acts(dev, now)
   elseif m == "reset" then
     routine_acts(dev, now)
-    set_auto(dev)
+    -- a zone that stays Manual until switched on is not reset by a mode change either
+    if (tonumber((dev:get_field("manual_until"))) or 0) < HOLD then set_auto(dev) end
   elseif m == "change" then
     if (busy[dev.id] or 0) >= now then return end -- the routine's own change
     set_manual(dev, "change seen")
@@ -218,6 +228,13 @@ local function is_heat(name)
 end
 M.is_heat = is_heat
 
+-- sun screens are only moved by hand or by a rain routine: their zone stays Manual until switched on
+local function is_hold(name)
+  local l = name:lower()
+  return l:find("zonwering") ~= nil or l:find("screen") ~= nil or l:find("awning") ~= nil
+end
+M.is_hold = is_hold
+
 local function sync_zones(driver, hub)
   local have = {}
   for _, d in ipairs(driver:get_devices()) do
@@ -232,7 +249,7 @@ local function sync_zones(driver, hub)
       have[key] = true
       driver:try_create_device({
         type = "EDGE_CHILD", parent_device_id = hub.id, parent_assigned_child_key = key,
-        label = n, profile = is_heat(n) and "automode-zone-heat" or "automode-zone",
+        label = n, profile = is_heat(n) and "automode-zone-heat" or (is_hold(n) and "automode-zone-hold" or "automode-zone"),
         manufacturer = "Stoeckie", model = "automode-zone", vendor_provided_label = n,
       })
     end
@@ -266,7 +283,7 @@ local function device_init_inner(driver, dev)
   if untl and untl > os.time() then
     dev:set_field("mode", "manual", { persist = true })
     emit_mode(dev, "manual")
-    emit(dev, automode["until"](M.clock(tz_of(dev), untl)))
+    emit(dev, automode["until"](until_text(dev, untl)))
     schedule_end(dev)
   else
     -- always send both values once: a zone that was just created may have missed its first events
@@ -282,7 +299,7 @@ local function device_init_inner(driver, dev)
         local m = dev:get_field("mode") or "auto"
         emit_mode(dev, m)
         local u = tonumber((dev:get_field("manual_until")))
-        emit(dev, automode["until"](u and M.clock(tz_of(dev), u) or "-"))
+        emit(dev, automode["until"](u and until_text(dev, u) or "-"))
       end
     end)
   end)
@@ -303,7 +320,7 @@ local function info_changed(driver, dev)
     -- the time zone may have changed: show "until" again on the zones
     for _, d in ipairs(driver:get_devices()) do
       local untl = tonumber((d:get_field("manual_until")))
-      if d.parent_assigned_child_key and untl then emit(d, automode["until"](M.clock(tz_of(d), untl))) end
+      if d.parent_assigned_child_key and untl then emit(d, automode["until"](until_text(d, untl))) end
     end
   end
 end

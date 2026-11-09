@@ -17,7 +17,7 @@ Automatic or Manual per zone. Routines pause for a while after someone operates 
 |---|---|---|
 | Automation zones | Zones (comma separated names, one device each) | empty |
 | Automation zones | Time zone (for "manual until") | Central Europe |
-| zone | Manual for (minutes): every new manual change starts it again | 120, zones with "heating" or "verwarming" in the name 240 |
+| zone | Manual for (minutes): every new manual change starts it again; **0 = Manual until you switch the zone on** (no timer, a mode change does not reset it either) | 120, zones with "heating" or "verwarming" in the name 240, zones with "zonwering", "screen" or "awning" in the name 0 |
 | zone | Routine window (seconds) | 120 |
 
 ## Install
