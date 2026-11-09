@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-09b"
+local BUILD = "2026-11-09c"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -336,11 +336,8 @@ local driver = Driver("stoeckie-auto-mode", {
     [autozones.ID] = { [autozones.commands.addZone.NAME] = handle_add_zone },
     [capabilities.switch.ID] = {
       [capabilities.switch.commands.on.NAME] = function(_, dev) set_auto(dev) end,
-      [capabilities.switch.commands.off.NAME] = function(_, dev)
-        -- off while already Manual (the app re-sends the shown state): the manual period is not extended
-        if shown(dev) == "manual" then return end
-        set_manual(dev, "switched off in the app")
-      end,
+      -- off again while Manual restarts the manual period (on purpose: "keep it manual for longer")
+      [capabilities.switch.commands.off.NAME] = function(_, dev) set_manual(dev, "switched off in the app") end,
     },
     [capabilities.refresh.ID] = {
       [capabilities.refresh.commands.refresh.NAME] = function(drv, dev)
