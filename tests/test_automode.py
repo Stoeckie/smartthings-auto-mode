@@ -137,8 +137,12 @@ def test_signals_right_after_routine():
     for _ in range(6):                                      # a window keeps moving for a minute
         lua.execute('NOW = NOW + 10'); sig(lua, "shade:W")
     assert last(lua, "mode") == "auto"
-    lua.execute('NOW = NOW + 60'); sig(lua, "shade:W")     # moved again later: by hand
+    lua.execute('NOW = NOW + 100'); sig(lua, "shade:W")    # moved again after the routine window: by hand
     assert last(lua, "mode") == "manual"
+    cmd(lua, "auto"); cmd(lua, "routine")
+    lua.execute('NOW = NOW + 1'); sig(lua, "shade:Kitchen Shade")    # "opening"
+    lua.execute('NOW = NOW + 94'); sig(lua, "shade:Kitchen Shade")   # "open" 94 s later (Somfy, 10-11-2026)
+    assert last(lua, "mode") == "auto"
     cmd(lua, "auto"); cmd(lua, "routine")
     lua.execute('NOW = NOW + 1'); sig(lua, "button:K")     # a button is always manual
     assert last(lua, "mode") == "manual"
