@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-10b"
+local BUILD = "2026-11-10c"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -74,14 +74,13 @@ local claims = {} -- device.id -> { [source] = until } changes of one device tha
 -- events (level after switch, a window that keeps moving) count as long as they come within CONT seconds
 -- of each other. Everything else, also shortly after a routine, is manual. A button press is always manual.
 local START = { light = 10, heat = 15, shade = 30 }
--- A shade the routine moved keeps belonging to the routine for SHADE_HOLD seconds, whatever it reports:
--- curtains that stop part-way, end positions reported late (Somfy "open" 94 s after "opening") or a
--- correction at the next poll must not turn the zone Manual (DS 10-11-2026).
-local SHADE_HOLD = 600
+-- A shade the routine moved keeps belonging to the routine for the routine window (setting busySeconds,
+-- default 120 s), whatever it reports: curtains that stop part-way, end positions reported late (Somfy
+-- "open" 94 s after "opening") or a correction at the next poll must not turn the zone Manual (DS 10-11-2026).
 -- a roof window reported "opening" and its position 30 s later; a Somfy shade reported "opening" and only
 -- "open" 94 s later (10-11-2026), which turned the curtains Manual for the day. Shades: up to the routine window.
 local CONT = { light = 8, heat = 45, shade = 120 }
-M.START, M.CONT, M.SHADE_HOLD = START, CONT, SHADE_HOLD
+M.START, M.CONT = START, CONT
 local timers = {} -- device.id -> timer
 
 local function pref(dev, k, d)
@@ -179,8 +178,8 @@ local function handle_signal(_, dev, cmd)
     return
   end
   local untl = cl[src]
-  if kind == "shade" and untl and acted[dev.id] and now <= acted[dev.id] + SHADE_HOLD then
-    cl[src] = acted[dev.id] + SHADE_HOLD
+  if kind == "shade" and untl and acted[dev.id] and now <= cap then
+    cl[src] = cap
     return
   end
   if untl and now <= untl and now <= cap then
@@ -188,7 +187,7 @@ local function handle_signal(_, dev, cmd)
     return
   end
   if not untl and acted[dev.id] and now - acted[dev.id] <= (START[kind] or 10) then
-    cl[src] = kind == "shade" and acted[dev.id] + SHADE_HOLD or math.min(now + (CONT[kind] or 8), cap)
+    cl[src] = kind == "shade" and cap or math.min(now + (CONT[kind] or 8), cap)
     return
   end
   set_manual(dev, src)

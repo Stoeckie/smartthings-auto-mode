@@ -22,7 +22,7 @@ preferences:
       default: 0
   - name: busySeconds
     title: Routine window (seconds)
-    description: "Longest time a device may keep changing after a routine started it (windows that take long to move). A device must start changing within 10 to 15 seconds after the routine, otherwise the change is manual."
+    description: "Longest time a device may keep changing after a routine started it (windows that take long to move). A device must start changing within 10 to 30 seconds after the routine, otherwise the change is manual. A curtain the routine moved may report anything in this time (stopped part-way, late end position)."
     required: false
     preferenceType: integer
     definition:

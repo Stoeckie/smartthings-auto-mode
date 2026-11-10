@@ -137,12 +137,12 @@ def test_signals_right_after_routine():
     for _ in range(6):                                      # a window keeps moving for a minute
         lua.execute('NOW = NOW + 10'); sig(lua, "shade:W")
     assert last(lua, "mode") == "auto"
-    lua.execute('NOW = NOW + 600'); sig(lua, "shade:W")    # moved again 10 minutes after the routine: by hand
+    lua.execute('NOW = NOW + 70'); sig(lua, "shade:W")     # moved again after the routine window: by hand
     assert last(lua, "mode") == "manual"
     cmd(lua, "auto"); cmd(lua, "routine")
     lua.execute('NOW = NOW + 2'); sig(lua, "shade:Slide Backdoor")    # closing
     lua.execute('NOW = NOW + 30'); sig(lua, "shade:Slide Backdoor")   # stopped part-way
-    lua.execute('NOW = NOW + 200'); sig(lua, "shade:Slide Backdoor")  # the next poll corrects the position
+    lua.execute('NOW = NOW + 70'); sig(lua, "shade:Slide Backdoor")   # the next poll corrects the position
     assert last(lua, "mode") == "auto"
     lua.execute('NOW = NOW + 5'); sig(lua, "shade:Other")              # a shade the routine did not move
     assert last(lua, "mode") == "manual"
@@ -216,9 +216,9 @@ def test_slow_window_is_routine():
     lua.execute('NOW = NOW + 6'); sig("shade:Roof Window 1")
     lua.execute('NOW = NOW + 30'); sig("shade:Roof Window 1")
     assert last(lua, "mode") == "auto"
-    lua.execute('NOW = NOW + 200'); sig("shade:Roof Window 1")   # a late correction: still the routine's
+    lua.execute('NOW = NOW + 60'); sig("shade:Roof Window 1")    # a late correction: still the routine's
     assert last(lua, "mode") == "auto"
-    lua.execute('NOW = NOW + 400'); sig("shade:Roof Window 1")   # more than 10 minutes later: by hand
+    lua.execute('NOW = NOW + 200'); sig("shade:Roof Window 1")   # after the routine window: by hand
     assert last(lua, "mode") == "manual"
 
 
