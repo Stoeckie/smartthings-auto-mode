@@ -16,7 +16,7 @@ local Driver = require "st.driver"
 local log = require "log"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-17a"
+local BUILD = "2026-11-18a"
 local automode = capabilities["silvervalley08660.autoMode"]
 local autosignal = capabilities["silvervalley08660.autoSignal"]
 local autozones = capabilities["silvervalley08660.autoZones"]
@@ -90,10 +90,26 @@ M.START, M.CONT = START, CONT
 -- START seconds after the last such device, or after the routine window, is manual as before.
 -- Zone setting "Start time (seconds)": a longer START for a zone with slow devices (a LIFX lamp that misses a
 -- reply only shows its new level at the next poll, up to 30 s later). 0 or empty = the values above.
+-- Since 18-11-2026 the setting can also make the start time SHORTER (1 or 2 s): in the hall a button pressed
+-- right after the motion routine must turn the zone Manual (DS). 0 or empty = the standard times.
+local function start_of(dev, kind)
+  local s = tonumber(dev.preferences and dev.preferences.startSeconds) or 0
+  if s > 0 then return s end
+  return START[kind] or 10
+end
+-- Routine window (busySeconds): how long a device the routine started may keep changing, the same for lamps,
+-- shades and heating. 0 = no follow-ups: only the start time counts.
+local function window_of(dev)
+  local b = tonumber(dev.preferences and dev.preferences.busySeconds)
+  if b == nil then return 120 end
+  return math.max(0, b)
+end
 local function still_starting(dev, kind, now)
   local a = acted[dev.id]
   if not a then return false end
-  local start = math.max(START[kind] or 10, tonumber(dev.preferences and dev.preferences.startSeconds) or 0)
+  local start = start_of(dev, kind)
+  -- the start chain (each starting device restarts it) never runs past the routine window or one start time
+  if now > a + math.max(window_of(dev), start) then return false end
   return now - math.max(a, started[dev.id] or 0) <= start
 end
 local timers = {} -- device.id -> timer
@@ -168,7 +184,7 @@ local function set_manual(dev, why)
 end
 
 local function routine_acts(dev, now)
-  busy[dev.id] = now + pref(dev, "busySeconds", 120)
+  busy[dev.id] = now + window_of(dev)
   acted[dev.id] = now
   claims[dev.id] = {}
   started[dev.id] = nil
@@ -181,13 +197,13 @@ local function handle_signal(_, dev, cmd)
   if kind == "button" then set_manual(dev, src); return end
   local cl = claims[dev.id] or {}
   claims[dev.id] = cl
-  local cap = (acted[dev.id] or 0) + pref(dev, "busySeconds", 120)
+  local cap = (acted[dev.id] or 0) + window_of(dev)
   if kind == "level" then
     -- a dimmer or a Hue lamp often reports its end level later (seen: 48 % right away, 50 % a minute later).
     -- A level change of a lamp the routine switched or dimmed is the routine's while its window is open.
     local name = src:sub(7)
     local known = cl["light:" .. name] or cl[src]
-    if acted[dev.id] and now <= cap and (known or still_starting(dev, "light", now)) then
+    if acted[dev.id] and ((known and now <= cap) or still_starting(dev, "light", now)) then
       if not known then started[dev.id] = now end
       cl[src] = cap
       return
@@ -204,9 +220,10 @@ local function handle_signal(_, dev, cmd)
     cl[src] = math.min(now + (CONT[kind] or 8), cap) -- still the routine's own movement
     return
   end
-  if not untl and now <= cap and still_starting(dev, kind, now) then
+  if not untl and still_starting(dev, kind, now) then
     started[dev.id] = now
-    cl[src] = kind == "shade" and cap or math.min(now + (CONT[kind] or 8), cap)
+    local follow = kind == "shade" and cap or math.min(now + (CONT[kind] or 8), cap)
+    cl[src] = math.max(follow, now) -- with routine window 0 the claim is only for this moment
     return
   end
   set_manual(dev, src)

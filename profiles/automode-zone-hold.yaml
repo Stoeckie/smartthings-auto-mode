@@ -22,16 +22,16 @@ preferences:
       default: 0
   - name: busySeconds
     title: Routine window (seconds)
-    description: "How long a device may keep changing after a routine started it. It must start within 10 to 30 s, otherwise the change is manual. A curtain the routine moved may report anything in this time (stopped part-way, late end position)."
+    description: "How long a device that a routine started (lamp, curtain, heating) may keep changing and still be the routine's: a late level, a curtain still moving or stopped part-way. A change after this is manual. 0 = only the start time counts."
     required: false
     preferenceType: integer
     definition:
-      minimum: 10
+      minimum: 0
       maximum: 900
       default: 120
   - name: startSeconds
     title: Start time (seconds)
-    description: "How long after a routine acts, or after the previous device of that routine started, a device may start changing and still be the routine's. 0 = standard (lights 10 s, heating 15 s, shades 30 s). Raise it for a zone with many or slow devices."
+    description: "How long after a routine acts, or after the previous device of that routine started, a device may start changing and still be the routine's. 0 = standard (lights 10 s, heating 15 s, shades 30 s). Lower it (for example 2) so a button pressed right after a routine counts as manual; raise it for many or slow devices."
     required: false
     preferenceType: integer
     definition:

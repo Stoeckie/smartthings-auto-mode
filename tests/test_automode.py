@@ -302,3 +302,32 @@ def test_start_time_setting_for_a_zone_with_slow_lamps():
     lua.execute('NOW = NOW + 2'); sig(lua, "level:Lamp 1")
     lua.execute('NOW = NOW + 25'); sig(lua, "level:Lamp 2")
     assert last(lua, "mode") == "manual"
+
+
+def test_hall_button_right_after_the_motion_routine_is_manual():
+    # hall: routine window 0 and start time 2 (DS 18-11-2026): a dimmer pressed 4 s after the motion routine is manual
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Gang licht", key = "zone:gang licht", prefs = { manualMinutes = 120, busySeconds = 0, startSeconds = 2 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "routine")
+    lua.execute('NOW = NOW + 1'); sig(lua, "light:Hal Trap Licht"); sig(lua, "level:Hal Trap Licht")
+    lua.execute('NOW = NOW + 1'); sig(lua, "light:Hal Lamp Nis")               # the routine's second lamp
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 4'); sig(lua, "level:Hal Trap Licht")             # pressed on the wall
+    assert last(lua, "mode") == "manual"
+
+
+def test_short_routine_window_applies_to_lamps_and_shades_alike():
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Zone", key = "zone:zone", prefs = { manualMinutes = 120, busySeconds = 20 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "routine")
+    lua.execute('NOW = NOW + 2'); sig(lua, "shade:S"); sig(lua, "light:L"); sig(lua, "level:L")
+    lua.execute('NOW = NOW + 15'); sig(lua, "shade:S"); sig(lua, "level:L")    # follow-ups inside 20 s
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 10'); sig(lua, "shade:S")                         # 27 s: after the window
+    assert last(lua, "mode") == "manual"
+    cmd(lua, "auto"); cmd(lua, "routine")
+    lua.execute('NOW = NOW + 2'); sig(lua, "light:L"); sig(lua, "level:L")
+    lua.execute('NOW = NOW + 25'); sig(lua, "level:L")                         # late level of a known lamp
+    assert last(lua, "mode") == "manual"
