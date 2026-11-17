@@ -88,10 +88,13 @@ M.START, M.CONT = START, CONT
 -- that (17-11-2026). Each late lamp turned the zone Manual for hours. So the START time does not run from
 -- "Routine is acting" alone: it starts again each time a device of the routine begins to change. A change
 -- START seconds after the last such device, or after the routine window, is manual as before.
+-- Zone setting "Start time (seconds)": a longer START for a zone with slow devices (a LIFX lamp that misses a
+-- reply only shows its new level at the next poll, up to 30 s later). 0 or empty = the values above.
 local function still_starting(dev, kind, now)
   local a = acted[dev.id]
   if not a then return false end
-  return now - math.max(a, started[dev.id] or 0) <= (START[kind] or 10)
+  local start = math.max(START[kind] or 10, tonumber(dev.preferences and dev.preferences.startSeconds) or 0)
+  return now - math.max(a, started[dev.id] or 0) <= start
 end
 local timers = {} -- device.id -> timer
 

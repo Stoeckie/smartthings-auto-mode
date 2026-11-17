@@ -284,3 +284,21 @@ def test_voice_command_shortly_after_a_routine_is_still_manual():
     assert last(lua, "mode") == "auto"
     lua.execute('NOW = NOW + 20'); sig(lua, "light:Koelkast")
     assert last(lua, "mode") == "manual"
+
+
+def test_start_time_setting_for_a_zone_with_slow_lamps():
+    # a lamp that missed a reply shows its level at the next poll, up to 30 s later: the zone setting covers that
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Buiten licht", key = "zone:buiten licht", prefs = { manualMinutes = 120, busySeconds = 120, startSeconds = 30 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "routine")
+    lua.execute('NOW = NOW + 2'); sig(lua, "level:Lamp 1")
+    lua.execute('NOW = NOW + 25'); sig(lua, "level:Lamp 2")       # 25 s after the previous lamp
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 35'); sig(lua, "level:Lamp 3")       # 35 s: too late, also with the setting
+    assert last(lua, "mode") == "manual"
+    lua.execute('Z.preferences.startSeconds = 0')                 # 0 = the standard 10 s
+    cmd(lua, "auto"); cmd(lua, "routine")
+    lua.execute('NOW = NOW + 2'); sig(lua, "level:Lamp 1")
+    lua.execute('NOW = NOW + 25'); sig(lua, "level:Lamp 2")
+    assert last(lua, "mode") == "manual"
