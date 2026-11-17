@@ -232,3 +232,55 @@ def test_restart_sends_nothing_unchanged():
     n = 0
     lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
     assert lua.eval('#(Z.events or {})') == n
+
+
+def test_routine_with_many_slow_lamps_stays_automatic():
+    """17-11-2026: the outside lights routine dims 19 lamps one after another (10 s) and a LIFX lamp that missed
+    a reply reports a few seconds later. Each lamp begins within seconds of the one before: all the routine's.
+    Before, the last lamps came more than 10 s after "Routine is acting" and the zone went Manual for hours."""
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Buiten licht", key = "zone:buiten licht", prefs = { manualMinutes = 120, busySeconds = 120 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "routine")
+    for i in range(18):                                     # one lamp every second, the 18th after 18 s
+        lua.execute('NOW = NOW + 1'); sig(lua, f"level:Lamp {i}")
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 4'); sig(lua, "level:Lamp late")     # missed a reply, reports 4 s after the others
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 9'); sig(lua, "light:Lamp 20")       # switched too, within 10 s of the previous lamp
+    lua.execute('NOW = NOW + 1'); sig(lua, "level:Lamp 20")
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 25'); sig(lua, "level:Lamp 3")       # a lamp of the routine reports its end level
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 1'); sig(lua, "level:Lamp other")    # a lamp the routine did not touch, 26 s later
+    assert last(lua, "mode") == "manual"
+
+
+def test_change_after_the_routine_window_is_manual_whatever_came_before():
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Buiten licht", key = "zone:buiten licht", prefs = { manualMinutes = 120, busySeconds = 30 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "routine")
+    for i in range(6):                                      # lamps keep starting every 5 s: 30 s in all
+        lua.execute('NOW = NOW + 5'); sig(lua, f"level:Lamp {i}")
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 5'); sig(lua, "level:Lamp 7")  # 35 s: the routine window (30 s) is over
+    assert last(lua, "mode") == "manual"
+    cmd(lua, "auto"); cmd(lua, "routine")
+    for i in range(6):
+        lua.execute('NOW = NOW + 5'); sig(lua, f"light:Lamp {i}")
+    lua.execute('NOW = NOW + 5'); sig(lua, "light:Lamp 7")
+    assert last(lua, "mode") == "manual"
+
+
+def test_voice_command_shortly_after_a_routine_is_still_manual():
+    # the kitchen lights go on by motion; 20 s later someone switches another lamp by voice: manual, as before
+    lua = setup()
+    lua.execute('Z = NEW({ id = "z", label = "Keuken", key = "zone:keuken", prefs = { manualMinutes = 120, busySeconds = 120 } })')
+    lua.execute('DRIVER.lifecycle_handlers.init(DRIVER, Z)')
+    cmd(lua, "routine")
+    lua.execute('NOW = NOW + 1'); sig(lua, "light:Tafel"); sig(lua, "level:Tafel")
+    lua.execute('NOW = NOW + 1'); sig(lua, "light:Aanrecht"); sig(lua, "level:Aanrecht")
+    assert last(lua, "mode") == "auto"
+    lua.execute('NOW = NOW + 20'); sig(lua, "light:Koelkast")
+    assert last(lua, "mode") == "manual"
