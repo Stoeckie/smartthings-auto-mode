@@ -31,7 +31,7 @@ preferences:
       default: 120
   - name: startSeconds
     title: Start time (seconds)
-    description: "How long after a routine acts, or after the previous device of that routine started, a device may start changing and still be the routine's. 0 = standard (lights 10 s, heating 15 s, shades 30 s). Lower it (for example 2) so a button pressed right after a routine counts as manual; raise it for many or slow devices."
+    description: "How long after a routine acts (or after its previous device started) a device may start changing and still be the routine's. 0 = standard (lights 10, heating 15, shades 30 s). Lower it (e.g. 2) so a switch pressed right after a routine is manual; raise it for slow devices."
     required: false
     preferenceType: integer
     definition:
